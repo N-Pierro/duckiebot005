@@ -47,7 +47,7 @@ The objective of this task is to determine the state of the robot (it's position
    ```bash
    git clone https://github.com/N-Pierro/duckiebot005
    cd state-estimation
-   '''
+   ```
 
  Login to the duckietown dashboard and verify that all the packages are installed and system health checks are ok
 
