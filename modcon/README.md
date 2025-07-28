@@ -1,119 +1,89 @@
 
 # **Duckietown Challenge**
 
-# **State Estimation**
+# **Modcon**
 
-The objective of this task is to determine the state of the robot (it's position, orientation, velocity, etc) using sensor data and mathematical models. Widely used filter algorithims like; kalman-filter, particle filter will be discussed and altimately develope functions based on the histogram filter to accurately estimate the state of our robot. 
+The aim of this task is to demonstrate modeling and control.  This includes calculating odometry, visualizing the estimation of robot agent's pose in the world,wheel calibration and tuning the PID controller.
 
 # Table of content
 
 - [Overview](#overview)
 - [Prerequisite](#prerequisite)
 - [Instruction setup](#instruction-setup)
-  - [Clone Repository](#clone-repository)
-- [Procedure](#procedure)
-  - [1. Define the Prior function](#1-define-the-prior-function)
-    - [Step-by-step breakdown](#step-by-step-breakdown)
-      - [Construct a grid of 2D coordinates](#construct-a-grid-of-2d-coordinates)
-      - [Define the Gaussian distribution](#define-the-gaussian-distribution)
-      - [Evaluate the PDF over the grid and return the belief](#evaluate-the-pdf-over-the-grid-and-return-the-belief)
-  - [2. Prediction (motion update)](#2-prediction-motion-update)
-  - [3. Update the robot's belief](#3-update-the-robots-belief)
+  - [1. Clone Repository](#1-clone-repository)
+  - [2. Wheel Calibration](#wheel-calibration)
+  - [3. Odometry](#3-odometry)
+  - [4. PID controller](#4-pid-controller)
 - [Apply the theory](#apply-the-theory)
 - [Testing in simulation](#testing-in-simulation)
 - [Testing in physical robot](#testing-in-physical-robot)
-- [Conclusion](#conclusion)
+
 
 
 # Overview
-1. Kalman filter: is a recursive bayesian filter that maintains the current mean and covariance of the state and update at each time step using the control input and measurement data.
-2. Particle filter; uses a set of particles to represent the belief distribution where each particle represents the hypothesis of a state along with weight that represents how likely it is. Works well with non-linear and non-Gaussian systems but performance depends on the number of particles.
-3. Histogram filter; is a discrete, grid-based state estimatiom algorithm used to estimate the probability distribution of the robot's position over a state space. It can handle non-Gaussian and multi modal distribution, highly used in 2D localization. 
+
+Three key concepts widely used in robicts system will be covered in this task. Implementing knowledge from this concepts permits the duckiebot to navigate the duckietown. These concepts include:
+- Wheel calibration: calibrates the motor/wheel assemblies of the robots by determining two calibration parameters, ensuring the duckiebot goes straight when commanded to do so and the wheels do not slip.
+- Odometry: is the measuring of the path or pose in time of the robot.
+- PID Control: is incharge of the robots decision makin by sending commands as signals to the robots actuators. 
 
 ## Prerequisite 
 
 - Python 3.x
 - Jupyter Notebook
-- Opencv
 - Go through the notebook
 - Make sure all ROS packages are installed
-
+- Duckiebot (properly configured and charged)
 
 
 ## Instruction setup
 
-1. Clone Repository
+### 1. Clone Repository
 
    ```bash
    git clone https://github.com/N-Pierro/duckiebot005
-   cd state-estimation
+   cd modcon
    ```
 
  Login to the duckietown dashboard and verify that all the packages are installed and system health checks are ok
 
-##  Procedure 
 
-For this task we will rely on the belief update cycle of the Histogram filter
+### 2. Wheel Calibration 
 
-### 1. Define the Prior function 
+This will be the entry poin to this task. Two assumptions are introduced:
+- The wheels of the robot do not slip
+- The robot is symmetrical along the longitudinal axes
 
-Here we choose to initialize the historgram based on a Gaussian distribution around 
-```python
-def histogram_prior(belief, grid_spec, mean_0, cov_0):
-```
+The two parameters of focus at this step are: 
+- Calibrating the gian (g) 
+- Calibrating the trim (t)
 
-- **Step-by-step breakdown:**
-  - Construct a grid of 2D coordinates:
-
-- **code snippet**
-  ```python
-  pos = np.empty(belief.shape + (2,))
-    pos[:, :, 0] = grid_spec["d"]
-    pos[:, :, 1] = grid_spec["phi"]
-  ```
-  - Define the Gaussian distribution
-
-  - **code snippet**
-  ```python
-   RV = multivariate_normal(mean_0, cov_0)
-  ```
-  - Evaluate the PDF over the grid and return the belief
-
-  - **code snippet**
-  ```python
-   RV = multivariate_normal(mean_0, cov_0)
-    belief = RV.pdf(pos)
-    return belief
-  ```
-### 2. Prediction (motion update) 
-
-This function updates the current belief distribution by predicting the next state of the robot based on it's motion model and control input from wheel encoder
+Follow the wheel calibration steps described in the `wheels-calibration.ipynb` of the notebook. The default values for the wheel gian is set to 1 and the trim is set to 0. Adjust these values if needed and save them.
 
 - **code snippet**
 ```python
-def histogram_predict(belief, left_encoder_ticks, right_encoder_ticks, grid_spec, robot_spec, cov_mask):
-    belief_in = belief
+# example code for wheel calibration
+def calibrate_wheels():
+    # Adjust wheel speeds
+    left_wheel_speed = adjust_speed(left_initial_speed)
+    right_wheel_speed = adjust_speed(right_initial_speed)
+    
+    # Apply the calibration
+    apply_calibration(left_wheel_speed, right_wheel_speed)
 ```
 
-### 3. Update the robot's belief
+### 3. Odometry
 
-This function produces a likelihood map, a grid that predicts would this sensor readings be if the robot where at this specific state 
+As mentioned earlier this concept is used to measure the robots position and orientation in the world. 
+- Power on the duckiebot and drive it; as the robot moves wheel encoders measure the rotation of each wheel.
+- The distance traveled by each wheel is calculated based on the wheels circumfrence and the number of rotation.
+- The robot's position is updated using the distances traveled by the left and right wheels, taking into account the robot's orientation.
 
-- **code snippet**
-```python
+### 4. PID Controller
 
-def histogram_update(belief, segments, road_spec, grid_spec):
-    # prepare the segments for each belief array
-    segmentsArray = prepare_segments(segments, grid_spec)
-    # generate all belief arrays
+The PID controller is the part of the duckiebot designed to send control signals (commands) to the motors of the robot, causing it to increase, decrease or maintain speed, coordinate with the camera sensor making it to move on a specific path.
+- Follow the exercises inthe notebook and run the `pid_controller.py `
 
-    measurement_likelihood = generate_measurement_likelihood(segmentsArray, road_spec, grid_spec)
-
-    if measurement_likelihood is not None:
-        belief = belief * measurement_likelihood  # element-wise multiplication
-        belief = belief / np.sum(belief)  # normalize
-    return measurement_likelihood, belief
-```
   
 ## Apply the theory
 
@@ -154,10 +124,6 @@ dts code workbench --duckiebot YOUR_DUCKIEBOT --local
 ```
 
 This command runs the duckiebot drivers on the robot while the agent runs on the laptop
-
-## Conclusion
-
-State estimation is a fundamental challenge in robotics that determines how accurately a robot can determine it's own position, orientatin, and motion within an environment. Due to noise in both sensor measurements of the duckiebot and motion models, state estimation must fuse multiple uncertain sources of information over time. This is where bayesian filtering methods, sucnn as the kalman filter, histogram filter and partivle filter play a critical role. So following this guide will provide the reader with an understanding of state estimation as applicable in robotics.
 
 ## Author: Njomeny Pierro M.M 
 
