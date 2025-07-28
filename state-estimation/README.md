@@ -10,19 +10,20 @@ The objective of this task is to determine the state of the robot (it's position
 - [Overview](#overview)
 - [Prerequisite](#prerequisite)
 - [Instruction setup](#instruction-setup)
-     - [clone Rpository](#clone-repository)
+  - [Clone Repository](#clone-repository)
 - [Procedure](#procedure)
-    - [1. Define the Prior function ](#Define-the-Prior-function)
-         - [Step-by-step breakdown](#Step-by-step-breakdown)
-             - [Construct a grid of 2D coordinates](#Construct-a-grid-of-2D-coordinates)
-             - [Define the Gaussian distribution](#Define-the-Gaussian-distribution)
-             - [Evaluate the PDF over the grid and return the belief](#Evaluate-the-PDF-over-the-grid-and-return-the-belief)
-    - [2. Prediction (motion update)](#Prediction-(motion-update))
-    - [3. Update the robot's belief](#Update-the-robot's-belief)
+  - [1. Define the Prior function](#1-define-the-prior-function)
+    - [Step-by-step breakdown](#step-by-step-breakdown)
+      - [Construct a grid of 2D coordinates](#construct-a-grid-of-2d-coordinates)
+      - [Define the Gaussian distribution](#define-the-gaussian-distribution)
+      - [Evaluate the PDF over the grid and return the belief](#evaluate-the-pdf-over-the-grid-and-return-the-belief)
+  - [2. Prediction (motion update)](#2-prediction-motion-update)
+  - [3. Update the robot's belief](#3-update-the-robots-belief)
 - [Apply the theory](#apply-the-theory)
 - [Testing in simulation](#testing-in-simulation)
-- [Testing in phyiscal robot](#testing-in-physical-robot)
+- [Testing in physical robot](#testing-in-physical-robot)
 - [Conclusion](#conclusion)
+
 
 # Overview
 1. Kalman filter: is a recursive bayesian filter that maintains the current mean and covariance of the state and update at each time step using the control input and measurement data.
@@ -43,7 +44,7 @@ The objective of this task is to determine the state of the robot (it's position
 
 1. Clone Repository
 
-   '''bash
+   ```bash
    git clone https://github.com/N-Pierro/duckiebot005
    cd state-estimation
    '''
