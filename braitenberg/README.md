@@ -68,10 +68,51 @@ The focus is on implementing a Braitenberg agent designed to avoid duckies using
 - Visualization: Before modifying the code, visualize the output of the motor matrix functions by loading them into the notebook. This helps in understanding how the matrices will affect the agent's behavior.
 - Image Processing: The code provided in `braitenberg03.py` allows for visualize the original images, preprocessed images, and the effects of the left and right motor matrices on the agent's control decisions.
 
+## Apply the theory
+
+The duckiebot comes witha a simulation enviroment which gives the possibility to try out modifications before applying on the actual duckiebot. 
+
+### Testing in simulation
+
+To test in simulation, use the command 
+    
+    $ dts code workbench --sim
+
+In this case you should use the link for the VNC environment. It should look something like 
+
+```commandline
+================================================================
+|                                                              |
+|    VNC running at http://127.0.0.1:32768                     |
+|                                                              |
+================================================================
+```
+
+Click on that link (note that the port number 32768 will probably be different but that's ok).
+
+### Testing on physical robot
+
+1. Test on physical robot using the command
+
+```bash
+dts code workbench --duckiebot YOUR_DUCKIEBOT
+```
+
+This runs both the duckiebot drivers and agent on the robot.
+
+2. You can also test using
+
+```bash
+dts code workbench --duckiebot YOUR_DUCKIEBOT --local
+```
+
+This command runs the duckiebot drivers on the robot while the agent runs on the laptop
+
 
 
 ## Conclusion
 
 At the end of this task a model that can fine-tune the weight matrices so that the agent effectively avoids duckies by responding appropriately to the highlighted areas in the images is developed. This is essential for the duckiebot to navigate in the duckietown world. 
 
+## Author: Njomeny Pierro M.M
 
