@@ -1,88 +1,127 @@
-<p align="center">
-<img src="./assets/images/dtlogo.png" alt="Duckietown Logo" width="50%">
-</p>
 
-# **Learning Experience (LX): State Estimation**
+# **Duckietown Challenge**
 
-# About these activities
+# **State Estimation**
 
-In this learning experience, we will implement a few state estimators.
-The first two notebooks have simple pedagogical examples of the `Kalman` and `particle filters`.
-The third notebook contains an implementation of the `histogram filter` in duckietown with some parts in
-the code to be completed as part of the exercise.
+The objective of this task is to determine the state of the robot (it's position, orientation, velocity, etc) using sensor data and mathematical models. Widely used filter algorithims like; kalman-filter, particle filter will be discussed and altimately develope functions based on the histogram filter to accurately estimate the state of our robot. 
 
-This learning experience is provided by the Duckietown team and can be run on Duckiebots. Visit us at the 
-[Duckietown Website](https://www.duckietown.com) for more learning materials, documentation, and demos.
+# Table of content
 
-For guided setup instructions, lecture content, and more related to this LX, see the [Self Driving Cars with 
-Duckietown course on EdX](https://learning.edx.org/course/course-v1:ETHx+DT-01x+3T2022/home).
+- [Overview](#overview)
+- [Prerequisite](#prerequisite)
+- [Instruction setup](#instruction-setup)
+     - [clone Rpository](#clone-repository)
+- [Procedure](#procedure)
+    - [1. Define the Prior function ](#Define-the-Prior-function)
+         - [Step-by-step breakdown](#Step-by-step-breakdown)
+             - [Construct a grid of 2D coordinates](#Construct-a-grid-of-2D-coordinates)
+             - [Define the Gaussian distribution](#Define-the-Gaussian-distribution)
+             - [Evaluate the PDF over the grid and return the belief](#Evaluate-the-PDF-over-the-grid-and-return-the-belief)
+    - [2. Prediction (motion update)](#Prediction-(motion-update))
+    - [3. Update the robot's belief](#Update-the-robot's-belief)
+- [Apply the theory](#apply-the-theory)
+- [Testing in simulation](#testing-in-simulation)
+- [Testing in phyiscal robot](#testing-in-physical-robot)
+- [Conclusion](#conclusion)
 
+# Overview
+1. Kalman filter: is a recursive bayesian filter that maintains the current mean and covariance of the state and update at each time step using the control input and measurement data.
+2. Particle filter; uses a set of particles to represent the belief distribution where each particle represents the hypothesis of a state along with weight that represents how likely it is. Works well with non-linear and non-Gaussian systems but performance depends on the number of particles.
+3. Histogram filter; is a discrete, grid-based state estimatiom algorithm used to estimate the probability distribution of the robot's position over a state space. It can handle non-Gaussian and multi modal distribution, highly used in 2D localization. 
 
-## Grading challenge
+## Prerequisite 
 
-Your submissions will be sent to the [`lx22-state-estimation`][challenge] challenge.
-
-You can verify the scores of your submissions on the [Challenge Leaderboard][leaderboard] after your submission is evaluated.
-
-[challenge]: https://challenges.duckietown.org/v4/humans/challenges/lx22-state-estimation
-[leaderboard]: https://challenges.duckietown.org/v4/humans/challenges/lx22-state-estimation/leaderboard
-
-
-
-# Instructions
-
-**NOTE:** All commands below are intended to be executed from the root directory of this exercise (i.e., the directory containing this README).
-
-
-## 1. Make sure your exercise is up-to-date
-
-Update your exercise definition and instructions,
-
-    git pull upstream mooc2022
-
-**NOTE:** to pull from upstream, you need to have completed the instructions in the [duckietown-lx repository README](https://github.com/duckietown/duckietown-lx/blob/mooc2022/README.md) to *fork* this repository.
+- Python 3.x
+- Jupyter Notebook
+- Opencv
+- Go through the notebook
+- Make sure all ROS packages are installed
 
 
-## 2. Make sure your system is up-to-date
 
-- 💻 Always make sure your Duckietown Shell is updated to the latest version. See [installation instructions](https://github.com/duckietown/duckietown-shell)
+## Instruction setup
 
-- 💻 Update the shell commands: `dts update`
+1. Clone Repository
 
-- 💻 Update your laptop/desktop: `dts desktop update`
+   '''bash
+   git clone https://github.com/N-Pierro/duckiebot005
+   cd state-estimation
+   '''
 
-- 🚙 Update your Duckiebot: `dts duckiebot update ROBOTNAME` (where `ROBOTNAME` is the name of your Duckiebot chosen during the initialization procedure.)
+ Login to the duckietown dashboard and verify that all the packages are installed and system health checks are ok
 
+##  Procedure 
 
-## 3. Work on the exercise
+For this task we will rely on the belief update cycle of the Histogram filter
 
-### Launch the code editor
+### 1. Define the Prior function 
 
-Open the code editor by running the following command,
-
-```
-dts code editor
+Here we choose to initialize the historgram based on a Gaussian distribution around 
+```python
+def histogram_prior(belief, grid_spec, mean_0, cov_0):
 ```
 
-Wait for a URL to appear on the terminal, then click on it or copy-paste it in the address bar
-of your browser to access the code editor. The first thing you will see in the code editor is
-this same document, you can continue there.
+- **Step-by-step breakdown:**
+  - Construct a grid of 2D coordinates:
 
+- **code snippet**
+  ```python
+  pos = np.empty(belief.shape + (2,))
+    pos[:, :, 0] = grid_spec["d"]
+    pos[:, :, 1] = grid_spec["phi"]
+  ```
+  - Define the Gaussian distribution
 
-### Walkthrough of notebooks
+  - **code snippet**
+  ```python
+   RV = multivariate_normal(mean_0, cov_0)
+  ```
+  - Evaluate the PDF over the grid and return the belief
 
-**NOTE**: You should be reading this from inside the code editor in your browser.
+  - **code snippet**
+  ```python
+   RV = multivariate_normal(mean_0, cov_0)
+    belief = RV.pdf(pos)
+    return belief
+  ```
+### 2. Prediction (motion update) 
 
-Inside the code editor, use the navigator sidebar on the left-hand side to navigate to the
-`notebooks` directory and open the first notebook.
+This function updates the current belief distribution by predicting the next state of the robot based on it's motion model and control input from wheel encoder
 
-Follow the instructions on the notebook and work through the notebooks in sequence.
+- **code snippet**
+```python
+def histogram_predict(belief, left_encoder_ticks, right_encoder_ticks, grid_spec, robot_spec, cov_mask):
+    belief_in = belief
+```
 
+### 3. Update the robot's belief
 
-### 💻 Testing in simulation
+This function produces a likelihood map, a grid that predicts would this sensor readings be if the robot where at this specific state 
 
-To test in simulation, use the command
+- **code snippet**
+```python
 
+def histogram_update(belief, segments, road_spec, grid_spec):
+    # prepare the segments for each belief array
+    segmentsArray = prepare_segments(segments, grid_spec)
+    # generate all belief arrays
+
+    measurement_likelihood = generate_measurement_likelihood(segmentsArray, road_spec, grid_spec)
+
+    if measurement_likelihood is not None:
+        belief = belief * measurement_likelihood  # element-wise multiplication
+        belief = belief / np.sum(belief)  # normalize
+    return measurement_likelihood, belief
+```
+  
+## Apply the theory
+
+The duckiebot comes witha a simulation enviroment which gives the possibility to try out modifications before applying on the actual duckiebot. 
+
+### Testing in simulation
+
+To test in simulation, use the command 
+    
     $ dts code workbench --sim
 
 In this case you should use the link for the VNC environment. It should look something like 
@@ -97,109 +136,32 @@ In this case you should use the link for the VNC environment. It should look som
 
 Click on that link (note that the port number 32768 will probably be different but that's ok).
 
-You will see four icons on the desktop. Two are particularly useful at this point. One is the joystick (you can 
-double-click and open one of those). When the robot is in "NORMAL_JOYSTICK_MODE," you
-can drive it around by making the joystick window become active (you will see a blue circle
-with a white arrow when the window is active) and then using your keyboard arrow keys.
-**Important:** In order to test your code, you will need to put your robot into "LANE_FOLLOWING" mode, by pressing "A"
-on the joystick. You can return to "NORMAL_JOYSTICK_MODE" by pressing "S". 
+### Testing on physical robot
 
-The other is RQT Image View, which is useful for debugging.
-For example, with RQT Image View you can see the robot camera feed. Do so by opening the tool by double-clicking
-the icon, and then once it opens use the drop-down bar in the top right to select `/agent/camera_node/image/compressed`.
-You may find some of the options interesting also. For example:
-
- - `/agent/line_detector_node/debug/segments/compressed` shows you an image with all of the line detections,
- - `/agent/ground_projection_node/debug/ground_projection_image/compressed` shows you a top down view of those line 
-detections projected onto the ground plane,
- - `/agent/histogram_lane_filter_node/belief_img` is maybe the most informative as you shows you a matrix
-that represents the histogram filter that you are implementing.
-
-Also note that this simulation test is just that, a test. Don't trust it fully. If you want a more accurate
-metric of performance, continue reading to the `Perform local evaluation` section below.
-
-
-### ℹ️️ Check Robot Compatibility
-
-While we try our best to support running these exercises on all versions of the Duckiebot, some activities require special hardware and
-are only supported on specific robots. Please use this section to ensure the compatibility of the exercise and your
-robot.
-
-The support matrix of this exercise is as follows:
-
-| Duckiebot Type   	                                                                                | Configuration 	 | Support Level   	    |
-|---------------------------------------------------------------------------------------------------|-----------------|----------------------|
-| [DB21-J4](https://get.duckietown.com/products/duckiebot-db21?variant=41543707099311)            	 | Jetson 4GB    	 | ✔️ Full Support    	 |
-| [DB21-J2](https://get.duckietown.com/products/duckiebot-db21?variant=40700056830127)            	 | Jetson 2GB    	 | ✔️ Full Support 	    |
-
-
-### 🚙 Testing on a physical robot
-
-You can test your agent on the robot using the command,
-
-    dts code workbench --duckiebot YOUR_DUCKIEBOT
-
-This is the modality "everything runs on the robot".
-
-You can also test using
-
-    dts code workbench --duckiebot YOUR_DUCKIEBOT --local 
-
-This is the modality "drivers running on the robot, agent runs on the laptop."
-
-
-### 📽 Perform local evaluation
-
-We suggest you evaluate your work locally before submitting your solution.
-You can do so by running the following command,
-
-    dts code evaluate
-
-This should take a few minutes.
-This is not supposed to be an interactive process: just let it run, and when you return,
-you will find the output in a folder, including videos, and trajectories, and all the statistics
-you would usually find on the website.
-
-
-### 📬 Submit your solution
-
-When you are ready to submit your homework, use the following command,
-
-    dts code submit
-
-This will package all your code and send it to the Duckietown servers for evaluation.
-
-
-## Troubleshooting
-
-
-If an error of this form occurs
+1. Test on physical robot using the command
 
 ```bash
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.8/dist-packages/duckietown_challenges_cli/cli.py", line 76, in dt_challenges_cli_main
-    dt_challenges_cli_main_(args=args, sections=sections, main_cmd="challenges")
-  File "/usr/local/lib/python3.8/dist-packages/duckietown_challenges_cli/cli.py", line 203, in dt_challenges_cli_main_
-    f(rest, environment)
-  File "/usr/local/lib/python3.8/dist-packages/duckietown_challenges_cli/cli_submit.py", line 165, in dt_challenges_cli_submit
-    br = submission_build(
-  File "/usr/local/lib/python3.8/dist-packages/duckietown_challenges_cli/cmd_submit_build.py", line 41, in submission_build
-    raise ZException(msg, available=list(credentials))
-zuper_commons.types.exceptions.ZException: Credentials for registry docker.io not available
-available:
+dts code workbench --duckiebot YOUR_DUCKIEBOT
 ```
 
-you need to log into docker using `dts`. Use this command:
+This runs both the duckiebot drivers and agent on the robot.
 
+2. You can also test using
+
+```bash
+dts code workbench --duckiebot YOUR_DUCKIEBOT --local
 ```
-dts challenges config --docker-username <USERNAME> --docker-password <PASSWORD>
-```
+
+This command runs the duckiebot drivers on the robot while the agent runs on the laptop
+
+## Conclusion
+
+State estimation is a fundamental challenge in robotics that determines how accurately a robot can determine it's own position, orientatin, and motion within an environment. Due to noise in both sensor measurements of the duckiebot and motion models, state estimation must fuse multiple uncertain sources of information over time. This is where bayesian filtering methods, sucnn as the kalman filter, histogram filter and partivle filter play a critical role. So following this guide will provide the reader with an understanding of state estimation as applicable in robotics.
+
+## Author: Njomeny Pierro M.M 
 
 
-## Retire obsolete submissions
 
-Note that you can "retire" submissions that you know are wrong.
-You can do this through [the Duckietown Challenges website](https://challenges.duckietown.org/).
 
-To do so, login using your token, then find the submission you want to retire from the list of submission
-in your user profile page. Use the button "retire" to the right of the submission record line.
+
+
