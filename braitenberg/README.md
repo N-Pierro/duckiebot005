@@ -34,58 +34,44 @@ This task uses a multiple techniques designed to maninpulate and filter images b
 
 ## Steps
 
-### 1. Adjusting HSV Settings
+### 1. Image Manipulation 
 
-The first step involves adjusting HSV settings for image processing to help the robot detect obstacles effectively. HSV color space is beneficial as it separates color information from intensity, making it easier to detect objects under varying lighting conditions.
+Image manipulation involves several steps:
+- Loading and Visualizing Images: It demonstrates how to load a JPEG image and visualize it using Python libraries. The image's dimensions and data type are examined.
+- Cropping Images: Techniques for cropping images using multidimensional array notation are covered. Users can select specific portions of an image and visualize the cropped result.
+- Color Channel Isolation: The notebook explains how to isolate and visualize individual color channels (Red, Green, Blue) and convert the image to grayscale.
+- Modifying Images: Users learn to modify images by creating copies and drawing shapes, such as lines and rectangles, on them. Examples include drawing a red line and creating a yellow box.
+- Activity: The notebook concludes with an activity where users are encouraged to make a copy of an image, draw a blue rectangle, and paste a section of the image into another location.
 
-- **Procedure**:
-  - Start with an image of a duck and adjust the HSV values using the `braitenberg02.ipynb` notebook.
-  - Fine-tune the HSV parameters to filter out the background and isolate the duck.
+code snippets can found in the `braitenberg01.py` file of the notebook
 
-- **Code Snippet**:
+### 2. Image Filtering
+
+The focus is on applying image manipulation techniques for basic filtering to highlight duckies in images, which will aid in avoiding collisions with them. The steps include:
+- Loading a Test Image: A sample image is loaded for processing.
+- Color Space Conversion: The image is converted from RGB to HSV (Hue, Saturation, Value) color space, which simplifies color-based filtering.
+- Defining Color Bounds
+- Filtering the Image: The defined HSV bounds are used to filter the image, highlighting the regions corresponding to the specified color.
+
+refere to the `image_filtering.py` of the notebook.
+
+### 3. Braitenberg agent
+
+The focus is on implementing a Braitenberg agent designed to avoid duckies using image filtering techniques. The steps involved include:
+- Agent Setup: The agent's motor control is defined by the equations:
   ```python
-  # Example from braitenberg02.ipynb
-  def adjust_hsv(image):
-      hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-      mask = cv2.inRange(hsv, lower_bound, upper_bound)
-      result = cv2.bitwise_and(image, image, mask=mask)
-      return result
+   left_motor = const + gain * np.sum(LEFT * preprocess(image))
+   right_motor = const + gain * np.sum(RIGHT * preprocess(image))
   ```
+- Function Implementation: implement the functions `get_motor_left_matrix()` and `get_motor_right_matrix()` in the connections.py file, replacing the current random values with your own.
+- Agent Functionality: The main functionality of the Braitenberg agent, including reading observations and creating motor commands, is contained in the `agent.py `file, which will utilize the motor matrix functions from `connections.py`.
+- Visualization: Before modifying the code, visualize the output of the motor matrix functions by loading them into the notebook. This helps in understanding how the matrices will affect the agent's behavior.
+- Image Processing: The code provided in `braitenberg03.py` allows for visualize the original images, preprocessed images, and the effects of the left and right motor matrices on the agent's control decisions.
 
-### 2. Fine-Tuning Preprocessing
 
-Once the optimal HSV values are determined, adjust these parameters in the preprocessing file to apply them to the robot's vision system.
 
-- **Procedure**:
-  - Use the `preprocessing.py` script to set the optimal HSV values for detecting ducks.
-  - Fine-tune the preprocessing steps to ensure the robot can effectively filter out unnecessary elements and focus on detecting ducks.
+## Conclusion
 
-- **Code Snippet**:
-  ```python
-  # Example from preprocessing.py
-  def preprocess_image(image):
-      hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-      mask = cv2.inRange(hsv, optimal_lower_bound, optimal_upper_bound)
-      processed_image = cv2.bitwise_and(image, image, mask=mask)
-      return processed_image
-  ```
-
-### 3. Configuring Robot's Behavior
-
-After preprocessing is fine-tuned, the next step is to configure how the robot's motors respond to the processed images, dictating how the robot reacts when a duck is detected.
-
-- **Procedure**:
-  - Adjust motor response settings in the `connections.py` file.
-  - Experiment with different configurations to ensure smooth navigation around detected obstacles.
-
-- **Code Snippet**:
-  ```python
-  # Example from connections.py
-  def control_motors(sensor_input):
-      if sensor_input == "duck_detected":
-          left_motor_speed = calculate_speed_left()
-          right_motor_speed = calculate_speed_right()
-          apply_motor_control(left_motor_speed, right_motor_speed)
-  ```
+At the end of this task a model that can fine-tune the weight matrices so that the agent effectively avoids duckies by responding appropriately to the highlighted areas in the images is developed. This is essential for the duckiebot to navigate in the duckietown world. 
 
 
