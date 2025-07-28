@@ -33,8 +33,9 @@ This task uses a multiple techniques designed to maninpulate and filter images b
 - Python 3.x
 - Jupyter Notebook
 - OpenCV
-- Duckietown ROS Packages
-- Basic understanding of image processing and robot control systems
+- Make sure all ROS packages are installed
+- Duckiebot (properly configured and charged)
+
 
 ## Instruction setup
 
