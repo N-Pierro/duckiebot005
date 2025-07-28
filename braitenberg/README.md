@@ -6,6 +6,18 @@ This task studies how image processing is done, converting color to hsv which ma
 
 ## Table of Content
 
+- [Overview](#overview)
+- [Prerequisite](#prerequisite)
+- [Instruction setup](#instruction-setup)
+  - [1. Clone Repository](#1-clone-repository)
+- [Steps](#steps)
+  - [1. Image Manipulation ](#image-Manipulation)
+  - [2. Image Filtering](#3-image-Filtering)
+  - [3. Braitenberg agent](#4-braitenberg-agent)
+- [Apply the theory](#apply-the-theory)
+- [Testing in simulation](#testing-in-simulation)
+- [Testing in physical robot](#testing-in-physical-robot)
+- [Conclusion](#conclusion)
 
 
 ## Overview
@@ -24,9 +36,9 @@ This task uses a multiple techniques designed to maninpulate and filter images b
 - Duckietown ROS Packages
 - Basic understanding of image processing and robot control systems
 
-## Setup
+## Instruction setup
 
-1. **Clone the repository**
+## 1. Clone the repository
    ```bash
    git clone https://github.com/dadashbaylinurlan/duckie04.git
    cd braitenberg
