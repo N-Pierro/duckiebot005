@@ -14,6 +14,11 @@ Covered in this repo are my solutions to the challenges:
 - ## **state-estimation**
 - ## **visual-lane-servoing**
 
+# ** Github repo name:** 
+```sh
+https://github.com/N-Pierro/duckiebot005
+```
+
 # **License**
 
 For license **Please refer to the official doccumentation** [Duckietown Learning Experiences (LX)](https://github.com/duckietown/duckietown-lx)
