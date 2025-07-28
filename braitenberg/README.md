@@ -1,68 +1,91 @@
-<p align="center">
-<img src="./assets/images/dtlogo.png" alt="Duckietown Logo" width="50%">
-</p>
+# Duckietown
 
-# **Activity: Braitenberg**
+# Braitenberg
 
-# About these activities
+This task studies how image processing is done, converting color to hsv which makes it easy to track. This is will be useful for the duckiebot to filter and track ducks in the robot world.
 
-This activity comprises of three notebooks; Image-Manipulation, Image-Filtering and Braitenberg, which i use to 
-develop computer vision techniques that manipulate and filter images to highlight specific objects; duckies on the road (duckietown) 
-then utilize the filtered images to guide the development of my own Braitenberg agent implimentation.
-
-The Braitenberg agent uses a mounted camera as a visual stimuli, using the connection.py file splits the observed image into two 
-matrices; get_motor_left_matrix and get_motor_right_matrix essentially to visualize the image and preprocessing.py to get the best hsv
-values to identify the duckies.
-
-
-## challenges/observation of this activity
-
-1. Knowledge of python has been helpful in performing this activity
-2. The main observation in this activity is the difference in simulation and implementation in the duckiebot; in order to achieve this
-
-   task i had to use an image of the real duckie enviroment, which required getting the real hsv values that identifies the duckie in the
-   duckiebot environment. Within the `/assets/samples/iotlab/` folder is a picture of the duckiebot environment used for this task `real001.png` 
+## Table of Content
 
 
 
-# Instructions
+## Overview
 
-Provided instruction on step-by-step execution of the activity
+This task uses a multiple techniques designed to maninpulate and filter images by importoring and analyzing images, after which this technique will be programmed into the duckiebot to idenfify objects. 
 
+1. Image Manipulation: This involve; loading and visualizing images, croping images and modifying images
+2. Image Filtering: This initially converts an image to hsv color space and then apply a simple image processing technique to highlight the region corresponding to a certain color.
+3. Braitenberg agent: A technique that is used to avoid collision with the ducks.
 
-## 1. System update
+## Prerequisites
 
-- 💻 Update the shell commands: `dts update`
+- Python 3.x
+- Jupyter Notebook
+- OpenCV
+- Duckietown ROS Packages
+- Basic understanding of image processing and robot control systems
 
-- 💻 Update your laptop/desktop: `dts desktop update`
+## Setup
 
-- 🚙 Update your Duckiebot: `dts duckiebot update duckiebot005`
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/dadashbaylinurlan/duckie04.git
+   cd braitenberg
+   ```
 
+## Steps
 
-## 2. Launch the code editor
+### 1. Adjusting HSV Settings
 
-Open the code editor by running the following command,
+The first step involves adjusting HSV settings for image processing to help the robot detect obstacles effectively. HSV color space is beneficial as it separates color information from intensity, making it easier to detect objects under varying lighting conditions.
 
-```
-dts code editor
-```
+- **Procedure**:
+  - Start with an image of a duck and adjust the HSV values using the `braitenberg02.ipynb` notebook.
+  - Fine-tune the HSV parameters to filter out the background and isolate the duck.
 
-Wait for a URL to appear on the terminal, then click on it or copy-paste it in the address bar
-of your browser to access the code editor. The first thing you will see in the code editor is
-this same document, you can continue there.
+- **Code Snippet**:
+  ```python
+  # Example from braitenberg02.ipynb
+  def adjust_hsv(image):
+      hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+      mask = cv2.inRange(hsv, lower_bound, upper_bound)
+      result = cv2.bitwise_and(image, image, mask=mask)
+      return result
+  ```
 
+### 2. Fine-Tuning Preprocessing
 
-## 3. 💻 Testing in simulation
+Once the optimal HSV values are determined, adjust these parameters in the preprocessing file to apply them to the robot's vision system.
 
-To test in simulation, use the command
+- **Procedure**:
+  - Use the `preprocessing.py` script to set the optimal HSV values for detecting ducks.
+  - Fine-tune the preprocessing steps to ensure the robot can effectively filter out unnecessary elements and focus on detecting ducks.
 
-    $ dts code workbench --sim
+- **Code Snippet**:
+  ```python
+  # Example from preprocessing.py
+  def preprocess_image(image):
+      hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+      mask = cv2.inRange(hsv, optimal_lower_bound, optimal_upper_bound)
+      processed_image = cv2.bitwise_and(image, image, mask=mask)
+      return processed_image
+  ```
 
-## 4. 🚙 Testing on a physical robot
+### 3. Configuring Robot's Behavior
 
-You can test your agent on the robot using the command,
+After preprocessing is fine-tuned, the next step is to configure how the robot's motors respond to the processed images, dictating how the robot reacts when a duck is detected.
 
-    $ dts code workbench --duckiebot duckiebot005
+- **Procedure**:
+  - Adjust motor response settings in the `connections.py` file.
+  - Experiment with different configurations to ensure smooth navigation around detected obstacles.
 
-The duckiebot should now execute the braitenberg agent
+- **Code Snippet**:
+  ```python
+  # Example from connections.py
+  def control_motors(sensor_input):
+      if sensor_input == "duck_detected":
+          left_motor_speed = calculate_speed_left()
+          right_motor_speed = calculate_speed_right()
+          apply_motor_control(left_motor_speed, right_motor_speed)
+  ```
+
 
