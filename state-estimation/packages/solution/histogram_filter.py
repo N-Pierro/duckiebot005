@@ -22,15 +22,19 @@ def histogram_prior(belief, grid_spec, mean_0, cov_0):
 def histogram_predict(belief, left_encoder_ticks, right_encoder_ticks, grid_spec, robot_spec, cov_mask):
     belief_in = belief
 
-    # TODO calculate v and w from ticks using kinematics.
-    #  You will need  some parameters in the `robot_spec` defined above
+    # Robot kinematics
+    ticks_to_meter = robot_spec["ticks_to_meter"]
+    baseline = robot_spec["baseline"]
 
-    # You may find the following code useful to find the current best heading estimate:
+    left_dist = left_encoder_ticks * ticks_to_meter
+    right_dist = right_encoder_ticks * ticks_to_meter
+
+    v = (right_dist + left_dist) / 2.0
+    w = (right_dist - left_dist) / baseline
+
+    # estimate the robot's current heading 
     maxids = np.unravel_index(belief_in.argmax(), belief_in.shape)
     phi_max = grid_spec['phi_min'] + (maxids[1] + 0.5) * grid_spec['delta_phi']
-
-    v = 0.0  # replace this with a function that uses the encoder
-    w = 0.0  # replace this with a function that uses the encoder
 
     # propagate each centroid
     d_t = grid_spec["d"] + v
@@ -41,9 +45,7 @@ def histogram_predict(belief, left_encoder_ticks, right_encoder_ticks, grid_spec
     # Accumulate the mass for each cell as a result of the propagation step
     for i in range(belief.shape[0]):
         for j in range(belief.shape[1]):
-            # If belief[i,j] there was no mass to move in the first place
             if belief[i, j] > 0:
-                # Now check that the centroid of the cell wasn't propagated out of the allowable range
                 if (
                     d_t[i, j] > grid_spec["d_max"]
                     or d_t[i, j] < grid_spec["d_min"]
@@ -51,14 +53,14 @@ def histogram_predict(belief, left_encoder_ticks, right_encoder_ticks, grid_spec
                     or phi_t[i, j] > grid_spec["phi_max"]
                 ):
                     continue
+                    
+                i_new = int((d_new - grid_spec["d_min"]) / grid_spec["delta_d"])
+                j_new = int((phi_new - grid_spec["phi_min"]) / grid_spec["delta_phi"])
 
-                # TODO Now find the cell where the new mass should be added
-                i_new = i  # replace with something that accounts for the movement of the robot
-                j_new = j  # replace with something that accounts for the movement of the robot
+                if 0 <= i_new < belief.shape[0] and 0 <= j_new < belief.shape[1]:
+                        p_belief[i_new, j_new] += belief[i, j]
 
-                p_belief[i_new, j_new] += belief[i, j]
-
-    # Finally we are going to add some "noise" according to the process model noise
+              
     # This is implemented as a Gaussian blur
     s_belief = np.zeros(belief.shape)
     gaussian_filter(p_belief, cov_mask, output=s_belief, mode="constant")
@@ -68,19 +70,15 @@ def histogram_predict(belief, left_encoder_ticks, right_encoder_ticks, grid_spec
     belief = s_belief / np.sum(s_belief)
     return belief
 
-
-# We will start by doing a little bit of processing on the segments to remove anything that is
-# behing the robot (why would it be behind?) or a color not equal to yellow or white
-
-
+# filter segments base on color
 def prepare_segments(segments, grid_spec):
     filtered_segments = []
     for segment in segments:
-
-        # we don't care about RED ones for now
-        if segment.color != segment.WHITE and segment.color != segment.YELLOW:
+        # Update for RGBA colour only for left and right
+        if (segment.color != (131, 121, 108, 255) and segment.color != (38, 37, 46, 255)):
             continue
-        # filter out any segments that are behind us
+
+        # Filter out any segments that are behind the robot
         if segment.points[0].x < 0 or segment.points[1].x < 0:
             continue
 
@@ -89,7 +87,7 @@ def prepare_segments(segments, grid_spec):
             filtered_segments.append(segment)
     return filtered_segments
 
-
+# generate vote function 
 def generate_vote(segment, road_spec):
     p1 = np.array([segment.points[0].x, segment.points[0].y])
     p2 = np.array([segment.points[1].x, segment.points[1].y])
@@ -108,23 +106,24 @@ def generate_vote(segment, road_spec):
     l_i = (l1 + l2) / 2
     d_i = (d1 + d2) / 2
     phi_i = np.arcsin(t_hat[1])
-    if segment.color == segment.WHITE:  # right lane is white
-        if p1[0] > p2[0]:  # right edge of white lane
-            d_i -= road_spec["linewidth_white"]
-        else:  # left edge of white lane
-            d_i -= road_spec["linewidth_white"]
-            d_i = road_spec["lanewidth"] * 2 + road_spec["linewidth_yellow"] - d_i
-            phi_i = -phi_i
-        d_i -= road_spec["lanewidth"]/2
 
-    elif segment.color == segment.YELLOW:  # left lane is yellow
-        if p2[0] > p1[0]:  # left edge of yellow lane
-            d_i -= road_spec["linewidth_yellow"]
-            d_i = road_spec["lanewidth"]/2 - d_i
+    if segment.color == (131, 121, 108, 255):  
+        if p1[0] > p2[0]:  
+            d_i -= road_spec["linewidth_off_white"]
+        else:  
+            d_i -= road_spec["linewidth_off_white"]
+            d_i = road_spec["lanewidth"] * 2 + road_spec["linewidth_black"] - d_i
             phi_i = -phi_i
-        else:  # right edge of yellow lane
-            d_i += road_spec["linewidth_yellow"]
-            d_i -= road_spec["lanewidth"]/2
+        d_i -= road_spec["lanewidth"] / 2
+
+    elif segment.color == (38, 37, 46, 255):  
+        if p2[0] > p1[0]:  
+            d_i -= road_spec["linewidth_black"]
+            d_i = road_spec["lanewidth"] / 2 - d_i
+            phi_i = -phi_i
+        else:  
+            d_i += road_spec["linewidth_black"]
+            d_i -= road_spec["lanewidth"] / 2
 
     return d_i, phi_i
 
@@ -145,20 +144,17 @@ def generate_measurement_likelihood(segments, road_spec, grid_spec):
         ):
             continue
 
-        # So now we have d_i and phi_i which correspond to the estimate of the distance
-        # from the center and the angle relative to the center generated by the single
-        # segment under consideration
-        # TODO find the cell index that corresponds to the measurement d_i, phi_i
-        i = 1  # replace this
-        j = 1  # replace this
+        i = int((d_i - grid_spec["d_min"]) / grid_spec["delta_d"])
+        j = int((phi_i - grid_spec["phi_min"]) / grid_spec["delta_phi"])
 
-        # Add one vote to that cell
-        measurement_likelihood[i, j] += 1
+            if 0 <= i < measurement_likelihood.shape[0] and 0 <= j < measurement_likelihood.shape[1]:
+                measurement_likelihood[i, j] += 1
 
-    if np.linalg.norm(measurement_likelihood) == 0:
+    if np.sum(measurement_likelihood) == 0:
         return None
-    measurement_likelihood /= np.sum(measurement_likelihood)
-    return measurement_likelihood
+
+    return measurement_likelihood / np.sum(measurement_likelihood)
+
 
 
 def histogram_update(belief, segments, road_spec, grid_spec):
@@ -169,12 +165,8 @@ def histogram_update(belief, segments, road_spec, grid_spec):
     measurement_likelihood = generate_measurement_likelihood(segmentsArray, road_spec, grid_spec)
 
     if measurement_likelihood is not None:
-        # TODO: combine the prior belief and the measurement likelihood to get the posterior belief
-        # Don't forget that you may need to normalize to ensure that the output is valid
-        # probability distribution
-
-        # replace this with something that combines the belief and the measurement_likelihood
-        belief = measurement_likelihood
+        belief = belief * measurement_likelihood  # element-wise multiplication
+        belief = belief / np.sum(belief)  # normalize
     return measurement_likelihood, belief
 
 def getSegmentDistance(segment):
